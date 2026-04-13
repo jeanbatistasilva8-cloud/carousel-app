@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carousel Creator - Crie Carrosséis Virais</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&family=Space+Grotesk:wght@400;500;700&family=Oswald:wght@400;600;700&family=Montserrat:wght@400;600;700;800&family=Georgia&family=Lora:wght@400;600;700&family=Merriweather:wght@400;700&family=Crimson+Text:wght@400;600&family=Poppins:wght@400;600;700&display=swap');
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef } = React;
+
+    // TEMPLATES
+    const TEMPLATES = [
+      { id: "dark-bold", name: "Dark Bold", preview: "#0A0A0A", styles: { bg: "#0A0A0A", cardBg: "#141414", text: "#FFFFFF", accent: "#FF6B00", border: "#1E1E1E" } },
+      { id: "orange-impact", name: "Orange Impact", preview: "#FF6B00", styles: { bg: "#FF6B00", cardBg: "#E55A00", text: "#FFFFFF", accent: "#000000", border: "#FF8C33" } },
+      { id: "editorial-white", name: "Editorial White", preview: "#FFFFFF", styles: { bg: "#FFFFFF", cardBg: "#F9F9F9", text: "#1A1A1A", accent: "#FF6B00", border: "#E5E5E5" } },
+      { id: "x-post", name: "X Post", preview: "#000000", styles: { bg: "#000000", cardBg: "#0A0A0A", text: "#FFFFFF", accent: "#1DA1F2", border: "#333333" } },
+    ];
+
+    const NICHES = ["Marketing", "Negócios", "Tecnologia", "Lifestyle", "Saúde", "Finanças", "Mindset", "Educação"];
+    const FONTS = [
+      { id: "Inter", label: "Inter" },
+      { id: "Playfair Display", label: "Playfair (Serif)" },
+      { id: "Montserrat", label: "Montserrat" },
+      { id: "Poppins", label: "Poppins" },
+    ];
+    const OBJECTIVES = [
+      { id: "engajamento", label: "Engajamento", desc: "Likes, comentários, salvamentos" },
+      { id: "autoridade", label: "Autoridade", desc: "Se posicionar como referência" },
+      { id: "vendas", label: "Vendas", desc: "Converter seguidores em clientes" },
+      { id: "crescimento", label: "Crescimento", desc: "Atrair novos seguidores" },
+    ];
+    const TONE_OF_VOICE = [
+      { id: "autoridade", label: "Autoridade", desc: "Expert, seguro, direto" },
+      { id: "agressivo", label: "Agressivo", desc: "Bold, controversial, impactante" },
+      { id: "descontraido", label: "Descontraído", desc: "Casual, coloquial, amigo" },
+      { id: "urgencia", label: "Urgência", desc: "FOMO, escasso, agora ou nunca" },
+    ];
+
+    // GERADOR DE HEADLINES
+    function generateViralHeadlines(topic, tone) {
+      const techniques = {
+        autoridade: [
+          `PARE DE ACREDITAR NAS MENTIRAS SOBRE ${topic.toUpperCase()}`,
+          `O QUE ${topic.toUpperCase()} REALMENTE SIGNIFICA`,
+          `${topic.toUpperCase()}: A VERDADE QUE MUDARÁ TUDO`,
+          `POR QUE VOCÊ ESTÁ ERRADO SOBRE ${topic.toUpperCase()}`,
+          `${topic.toUpperCase()}: O GUIA DEFINITIVO`,
+        ],
+        agressivo: [
+          `TODOS ESTÃO FAZENDO ERRADO COM ${topic.toUpperCase()}`,
+          `${topic.toUpperCase()} VAI TE PREJUDICAR`,
+          `ISSO MUDA TUDO SOBRE ${topic.toUpperCase()}}`,
+          `MATE ESSA ILUSÃO SOBRE ${topic.toUpperCase()} AGORA`,
+          `${topic.toUpperCase()} NÃO É O QUE VOCÊ PENSA`,
+        ],
+        descontraido: [
+          `DEIXA EU TE CONTAR A REAL SOBRE ${topic.toUpperCase()}`,
+          `${topic.toUpperCase()}: O QUE NINGUÉM FALA`,
+          `BORA BATER UM PAPO SOBRE ${topic.toUpperCase()}`,
+          `${topic.toUpperCase()}: SEM ENROLAÇÃO`,
+          `A CONVERSA QUE FALTAVA SOBRE ${topic.toUpperCase()}`,
+        ],
+        urgencia: [
+          `CUIDADO: ${topic.toUpperCase()} VAI MUDAR AMANHÃ`,
+          `CORRE: ${topic.toUpperCase()} NÃO DURA MUITO TEMPO`,
+          `AGORA OU NUNCA: ${topic.toUpperCase()}`,
+          `ÚLTIMO AVISO: ${topic.toUpperCase()}}`,
+          `RÁPIDO: A JANELA DE OPORTUNIDADE TÁ FECHANDO`,
+        ],
+      };
+      return (techniques[tone] || techniques.autoridade).slice(0, 5);
+    }
+
+    // MAIN APP
+    function App() {
+      const [step, setStep] = useState("setup");
+      const [topic, setTopic] = useState("");
+      const [niche, setNiche] = useState("");
+      const [objective, setObjective] = useState("engajamento");
+      const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0]);
+      const [numSlides, setNumSlides] = useState(7);
+      const [toneOfVoice, setToneOfVoice] = useState("autoridade");
+      const [headlineSuggestions, setHeadlineSuggestions] = useState([]);
+      const [showHeadlines, setShowHeadlines] = useState(false);
+      const [accentColor, setAccentColor] = useState("#FF6B00");
+      const [font, setFont] = useState("Inter");
+
+      const handleGenerate = () => {
+        if (!topic) return;
+        setStep("preview");
+      };
+
+      const t = selectedTemplate.styles;
+
+      // SETUP SCREEN
+      if (step === "setup") {
+        return (
+          <div style={{ minHeight: "100vh", background: "#080808", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 24px 80px", fontFamily: "Inter, sans-serif" }}>
+            <div style={{ marginBottom: 24, textAlign: "center" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "#0F0F0F", borderRadius: 100, border: "1px solid #1E1E1E", marginBottom: 24 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF6B00" }} />
+                <span style={{ fontSize: 11, color: "#555", letterSpacing: "0.12em" }}>CAROUSEL CREATOR</span>
+              </div>
+              <h1 style={{ fontSize: 48, fontWeight: 900, margin: "0 0 12px", letterSpacing: "-0.035em" }}>
+                Crie carrosséis <span style={{ color: "#FF6B00" }}>virais</span> em segundos
+              </h1>
+              <p style={{ color: "#555", fontSize: 14, margin: "0 0 44px" }}>IA especializada em copywriting viral</p>
+            </div>
+
+            <div style={{ width: "100%", maxWidth: 560 }}>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 8, letterSpacing: "0.1em" }}>ASSUNTO</label>
+                <input value={topic} onChange={(e) => setTopic(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleGenerate()} placeholder="Ex: Como dobrar seu faturamento" style={{ width: "100%", padding: "11px 13px", background: "#111", border: "1px solid #1E1E1E", borderRadius: 10, color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} onFocus={(e) => e.target.style.borderColor = "#FF6B00"} onBlur={(e) => e.target.style.borderColor = "#1E1E1E"} />
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 8, letterSpacing: "0.1em" }}>NICHO</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                  {NICHES.map((n) => (
+                    <button key={n} onClick={() => setNiche(niche === n ? "" : n)} style={{ padding: "6px 14px", borderRadius: 100, background: niche === n ? "#FF6B00" : "#0F0F0F", border: `1px solid ${niche === n ? "#FF6B00" : "#1E1E1E"}`, color: niche === n ? "#fff" : "#555", fontSize: 12, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{n}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 8, letterSpacing: "0.1em" }}>TOM DE VOZ</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {TONE_OF_VOICE.map((v) => (
+                    <button key={v.id} onClick={() => setToneOfVoice(v.id)} style={{ padding: "10px 14px", textAlign: "left", background: toneOfVoice === v.id ? "#141414" : "#0A0A0A", border: `1px solid ${toneOfVoice === v.id ? "#FF6B00" : "#1A1A1A"}`, borderRadius: 10, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{v.label}</div>
+                      <div style={{ fontSize: 11, color: "#444", marginTop: 2 }}>{v.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 28 }}>
+                <label style={{ display: "block", fontSize: 10, color: "#444", marginBottom: 8, letterSpacing: "0.1em" }}>OBJETIVO</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {OBJECTIVES.map((o) => (
+                    <button key={o.id} onClick={() => setObjective(o.id)} style={{ padding: "10px 14px", textAlign: "left", background: objective === o.id ? "#141414" : "#0A0A0A", border: `1px solid ${objective === o.id ? "#FF6B00" : "#1A1A1A"}`, borderRadius: 10, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{o.label}</div>
+                      <div style={{ fontSize: 11, color: "#444", marginTop: 2 }}>{o.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={handleGenerate} disabled={!topic} style={{ width: "100%", padding: "14px", background: topic ? "#FF6B00" : "#111", border: "none", borderRadius: 12, color: topic ? "#fff" : "#333", fontSize: 14, fontWeight: 700, cursor: topic ? "pointer" : "not-allowed", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                {topic ? "✦ Gerar Carrossel com IA" : "Preencha o assunto"}
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // PREVIEW SCREEN
+      return (
+        <div style={{ height: "100vh", background: "#080808", color: "#fff", display: "flex", flexDirection: "column", fontFamily: "Inter, sans-serif", overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #111", background: "#0A0A0A" }}>
+            <button onClick={() => setStep("setup")} style={{ background: "none", border: "1px solid #1E1E1E", color: "#555", padding: "5px 10px", borderRadius: 7, cursor: "pointer", fontSize: 11, fontFamily: "inherit" }}>← Voltar</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 20, height: 20, borderRadius: 5, background: "#FF6B00", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>✦</div>
+              <span style={{ fontSize: 12, fontWeight: 600 }}>Carousel Creator</span>
+            </div>
+            <button onClick={() => { setHeadlineSuggestions(generateViralHeadlines(topic, toneOfVoice)); setShowHeadlines(true); }} style={{ background: "#FF6B00", border: "none", color: "#fff", padding: "5px 14px", borderRadius: 7, cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}>✨ Headlines</button>
+          </div>
+
+          {/* Headline Generator Modal */}
+          {showHeadlines && (
+            <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "#080808F0", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+              <div style={{ width: 500, background: "#0D0D0D", border: "1px solid #1E1E1E", borderRadius: 16, padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>✨ 5 Headlines Virais</span>
+                  <button onClick={() => setShowHeadlines(false)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 16 }}>✕</button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {headlineSuggestions.map((h, i) => (
+                    <div key={i} style={{ background: "#111", border: "1px solid #1E1E1E", borderRadius: 8, padding: 12, cursor: "pointer", transition: "all 0.15s" }} onClick={() => { navigator.clipboard.writeText(h); setShowHeadlines(false); }}>
+                      <div style={{ color: accentColor, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>#{i + 1}</div>
+                      <div style={{ color: "#fff", fontSize: 13, lineHeight: 1.4 }}>{h}</div>
+                      <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>Clica para copiar</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ width: 280, height: 380, background: t.bg, borderRadius: 14, border: `1px solid ${t.border}`, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 20, textAlign: "center", fontFamily: `'${font}', sans-serif` }}>
+              <div style={{ width: 40, height: 3, background: accentColor, borderRadius: 2, marginBottom: 16 }} />
+              <h2 style={{ color: t.text, fontSize: 22, fontWeight: 900, marginBottom: 12, letterSpacing: "-0.02em" }}>{topic.toUpperCase()}</h2>
+              <p style={{ color: t.text, fontSize: 13, opacity: 0.8, lineHeight: 1.6 }}>Conteúdo viral adaptado ao tom: {TONE_OF_VOICE.find(v => v.id === toneOfVoice)?.label}</p>
+            </div>
+          </div>
+
+          <div style={{ padding: "16px", textAlign: "center", color: "#555", fontSize: 12 }}>
+            ✓ Gerador ativo • Tom: <span style={{ color: accentColor, fontWeight: 600 }}>{TONE_OF_VOICE.find(v => v.id === toneOfVoice)?.label}</span> • Assunto: <span style={{ color: "#fff" }}>{topic}</span>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById("root"));
+  </script>
+</body>
+</html>
